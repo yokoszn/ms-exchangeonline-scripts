@@ -1,36 +1,25 @@
-# Variables - Update these
-$Calendar = "sharedcalendar@yourdomain.com:\Calendar"
+# Variables
+$Calendar = "shared@domain.com:\Calendar"
 $Editors = @(
-    "user1@yourdomain.com",
-    "user2@yourdomain.com",
-    "user3@yourdomain.com"
+    "usr1@resengco.com",
+    "usr2@resengco.com",
+    "usr3@resengco.com"
 )
 
-# Connect if not already connected
-if (-not (Get-ConnectionInformation -ErrorAction SilentlyContinue)) {
-    Connect-ExchangeOnline -ShowBanner:$false
-}
+# Connect
+Connect-ExchangeOnline -ShowBanner:$false -ErrorAction SilentlyContinue
 
-# Get existing permissions once
-$ExistingPerms = Get-MailboxFolderPermission -Identity $Calendar | 
-    Select-Object -ExpandProperty User
+# Set Default permission (always exists, so always use Set)
+Set-MailboxFolderPermission -Identity $Calendar -User Default -AccessRights Reviewer -Confirm:$false
 
-# Set Default (everyone) permission
-if ($ExistingPerms -contains "Default") {
-    Set-MailboxFolderPermission -Identity $Calendar -User Default -AccessRights Reviewer -Confirm:$false
-} else {
-    Add-MailboxFolderPermission -Identity $Calendar -User Default -AccessRights Reviewer -Confirm:$false
-}
-
-# Batch process editors
-$Editors | ForEach-Object -Parallel {
-    $User = $_
-    $CalendarPath = $using:Calendar
-    $Existing = $using:ExistingPerms
+# Handle editors - remove then add to avoid conflicts
+foreach ($Editor in $Editors) {
+    # Remove existing permission (ignore errors if doesn't exist)
+    Remove-MailboxFolderPermission -Identity $Calendar -User $Editor -Confirm:$false -ErrorAction SilentlyContinue
     
-    if ($User -in $Existing) {
-        Set-MailboxFolderPermission -Identity $CalendarPath -User $User -AccessRights Editor -Confirm:$false
-    } else {
-        Add-MailboxFolderPermission -Identity $CalendarPath -User $User -AccessRights Editor -Confirm:$false
-    }
-} -ThrottleLimit 3
+    # Add fresh permission
+    Add-MailboxFolderPermission -Identity $Calendar -User $Editor -AccessRights Editor -Confirm:$false
+}
+
+# Verify
+Get-MailboxFolderPermission -Identity $Calendar | Format-Table User, AccessRights -AutoSize
