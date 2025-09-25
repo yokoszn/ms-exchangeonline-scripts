@@ -1,9 +1,9 @@
 # Variables
 $Calendar = "shared@domain.com:\Calendar"
 $Editors = @(
-    "usr1@resengco.com",
-    "usr2@resengco.com",
-    "usr3@resengco.com"
+    "usr1@domain.com",
+    "usr2@domain.com",
+    "usr3@domain.com"
 )
 
 # Connect
